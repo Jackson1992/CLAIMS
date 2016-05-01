@@ -195,7 +195,11 @@ bool PhysicalNestLoopJoin::Next(SegmentExecStatus *const exec_status,
           jtc->buffer_stream_iterator_->increase_cur_();
         }
 
-        jtc->buffer_stream_iterator_->~BlockStreamTraverseIterator();
+        //        jtc->buffer_stream_iterator_->~BlockStreamTraverseIterator();
+        if (jtc->buffer_stream_iterator_ != NULL) {
+          delete jtc->buffer_stream_iterator_;
+          jtc->buffer_stream_iterator_ = NULL;
+        }  // TEST MEMORY LEAK
         if (NULL != (buffer_block = jtc->buffer_iterator_.nextBlock())) {
           jtc->buffer_stream_iterator_ = buffer_block->createIterator();
         } else {
@@ -243,7 +247,11 @@ bool PhysicalNestLoopJoin::Next(SegmentExecStatus *const exec_status,
         return true;
       }
     }
-    jtc->block_stream_iterator_->~BlockStreamTraverseIterator();
+    //    jtc->block_stream_iterator_->~BlockStreamTraverseIterator();
+    if (jtc->block_stream_iterator_ != NULL) {
+      delete jtc->block_stream_iterator_;
+      jtc->block_stream_iterator_ = NULL;
+    }
     jtc->block_stream_iterator_ = jtc->block_for_asking_->createIterator();
   }
   return Next(exec_status, block);
