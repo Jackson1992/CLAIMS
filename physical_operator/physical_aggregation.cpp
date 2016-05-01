@@ -228,7 +228,7 @@ bool PhysicalAggregation::Open(SegmentExecStatus *const exec_status,
     if (bsti != NULL) {
       delete bsti;
       bsti = NULL;
-    }
+    }  // memory leak test
     bsti = block_for_asking->createIterator();
     bsti->reset();
     // traverse every tuple from block
