@@ -215,6 +215,10 @@ bool PhysicalNestLoopJoin::Next(SegmentExecStatus *const exec_status,
             false &&
             "[NestloopJoin]: this block shouldn't be NULL in nest loop join!");
       }
+      if (jtc->buffer_stream_iterator_ != NULL) {
+        delete jtc->buffer_stream_iterator_;
+        jtc->buffer_stream_iterator_ = NULL;
+      }  // TEST MEMORY LEAK
       jtc->buffer_stream_iterator_ = buffer_block->createIterator();
       jtc->block_stream_iterator_->increase_cur_();
     }
@@ -230,6 +234,10 @@ bool PhysicalNestLoopJoin::Next(SegmentExecStatus *const exec_status,
       }
       return false;
     }
+    if (jtc->buffer_stream_iterator_ != NULL) {
+      delete jtc->buffer_stream_iterator_;
+      jtc->buffer_stream_iterator_ = NULL;
+    }  // MEMORY LEAK TEST
     jtc->buffer_stream_iterator_ = buffer_block->createIterator();
 
     // ask block from right child
