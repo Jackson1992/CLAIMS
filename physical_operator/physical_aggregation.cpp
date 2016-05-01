@@ -216,6 +216,7 @@ bool PhysicalAggregation::Open(SegmentExecStatus *const exec_status,
   BlockStreamBase *block_for_asking =
       BlockStreamBase::createBlock(state_.input_schema_, state_.block_size_);
   block_for_asking->setEmpty();
+  BlockStreamBase::BlockStreamTraverseIterator *bsti = NULL;
 
   start = curtick();
   // traverse every block from child
@@ -224,8 +225,11 @@ bool PhysicalAggregation::Open(SegmentExecStatus *const exec_status,
   while (state_.child_->Next(exec_status, block_for_asking)) {
     RETURN_IF_CANCELLED(exec_status);
 
-    BlockStreamBase::BlockStreamTraverseIterator *bsti =
-        block_for_asking->createIterator();
+    if (bsti != NULL) {
+      delete bsti;
+      bsti = NULL;
+    }
+    bsti = block_for_asking->createIterator();
     bsti->reset();
     // traverse every tuple from block
     while (NULL != (cur = bsti->currentTuple())) {
