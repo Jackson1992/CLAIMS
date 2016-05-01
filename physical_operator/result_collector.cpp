@@ -184,7 +184,6 @@ void* ResultCollector::CollectResult(void* arg) {
   Pthis->block_buffer_->query_time_ = eclipsed_seconds;
   Pthis->block_buffer_->schema_ = Pthis->state_.input_->duplicateSchema();
   Pthis->finished_thread_count_++;
-
   return 0;
 }
 

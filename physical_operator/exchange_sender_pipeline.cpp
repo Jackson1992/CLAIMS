@@ -39,6 +39,7 @@
 #include "../../Environment.h"
 #include "../../utility/ThreadSafe.h"
 #include "../../utility/rdtsc.h"
+#include "../common/memory_handle.h"
 #include "../Executor/exchange_tracker.h"
 namespace claims {
 namespace physical_operator {
@@ -235,6 +236,7 @@ bool ExchangeSenderPipeline::Next(SegmentExecStatus* const exec_status,
           state_.schema_->copyTuple(tuple_from_child,
                                     tuple_in_cur_block_stream);
         }
+        DELETE_PTR(traverse_iterator);  // MEMORY LEAK POINT;
       } else if (state_.partition_schema_.isBroadcastPartition()) {
         /**
          * for boardcast case, all block from child should inserted into all

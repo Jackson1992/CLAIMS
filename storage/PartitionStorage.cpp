@@ -9,16 +9,15 @@
 #include "../Debug.h"
 #include "MemoryStore.h"
 #include "../Config.h"
-PartitionStorage::PartitionStorage(const PartitionID &partition_id,
-                                   const unsigned &number_of_chunks,
+PartitionStorage::PartitionStorage(const PartitionID& partition_id,
+                                   const unsigned& number_of_chunks,
                                    const StorageLevel& storage_level)
     : partition_id_(partition_id),
       number_of_chunks_(number_of_chunks),
       desirable_storage_level_(storage_level) {
   for (unsigned i = 0; i < number_of_chunks_; i++) {
-    chunk_list_.push_back(
-        new ChunkStorage(ChunkID(partition_id_, i), BLOCK_SIZE,
-                         desirable_storage_level_));
+    chunk_list_.push_back(new ChunkStorage(
+        ChunkID(partition_id_, i), BLOCK_SIZE, desirable_storage_level_));
   }
 }
 
@@ -29,12 +28,10 @@ PartitionStorage::~PartitionStorage() {
   chunk_list_.clear();
 }
 
-void PartitionStorage::addNewChunk() {
-  number_of_chunks_++;
-}
+void PartitionStorage::addNewChunk() { number_of_chunks_++; }
 
 void PartitionStorage::updateChunksWithInsertOrAppend(
-    const PartitionID &partition_id, const unsigned &number_of_chunks,
+    const PartitionID& partition_id, const unsigned& number_of_chunks,
     const StorageLevel& storage_level) {
   if (!chunk_list_.empty()) {
     /*
@@ -44,11 +41,11 @@ void PartitionStorage::updateChunksWithInsertOrAppend(
      */
     MemoryChunkStore::getInstance()->returnChunk(
         chunk_list_.back()->getChunkID());
-//		if (Config::local_disk_mode == 0)
+    //		if (Config::local_disk_mode == 0)
     // actually, DISK is not used, only HDFS and MEMORY is used
     chunk_list_.back()->setCurrentStorageLevel(HDFS);
-//		else
-//			chunk_list_.back()->setCurrentStorageLevel(DISK);
+    //		else
+    //			chunk_list_.back()->setCurrentStorageLevel(DISK);
   }
   for (unsigned i = number_of_chunks_; i < number_of_chunks; i++)
     chunk_list_.push_back(
@@ -56,7 +53,7 @@ void PartitionStorage::updateChunksWithInsertOrAppend(
   number_of_chunks_ = number_of_chunks;
 }
 
-void PartitionStorage::removeAllChunks(const PartitionID &partition_id) {
+void PartitionStorage::removeAllChunks(const PartitionID& partition_id) {
   if (!chunk_list_.empty()) {
     vector<ChunkStorage*>::iterator iter = chunk_list_.begin();
     MemoryChunkStore* mcs = MemoryChunkStore::getInstance();
@@ -68,47 +65,43 @@ void PartitionStorage::removeAllChunks(const PartitionID &partition_id) {
   }
 }
 
-PartitionStorage::PartitionReaderItetaor* PartitionStorage::createReaderIterator() {
+PartitionStorage::PartitionReaderItetaor*
+PartitionStorage::createReaderIterator() {
   return new PartitionReaderItetaor(this);
 }
-PartitionStorage::PartitionReaderItetaor* PartitionStorage::createAtomicReaderIterator() {
+PartitionStorage::PartitionReaderItetaor*
+PartitionStorage::createAtomicReaderIterator() {
   return new AtomicPartitionReaderIterator(this);
 }
 
 PartitionStorage::PartitionReaderItetaor::PartitionReaderItetaor(
     PartitionStorage* partition_storage)
-    : ps(partition_storage),
-      chunk_cur_(0),
-      chunk_it_(0) {
+    : ps(partition_storage), chunk_cur_(0), chunk_it_(0) {}
 
-}
-
-//PartitionStorage::PartitionReaderItetaor::PartitionReaderItetaor():chunk_cur_(0){
+// PartitionStorage::PartitionReaderItetaor::PartitionReaderItetaor():chunk_cur_(0){
 //
 //}
-PartitionStorage::PartitionReaderItetaor::~PartitionReaderItetaor() {
-
-}
+PartitionStorage::PartitionReaderItetaor::~PartitionReaderItetaor() {}
 ChunkReaderIterator* PartitionStorage::PartitionReaderItetaor::nextChunk() {
   if (chunk_cur_ < ps->number_of_chunks_)
     return ps->chunk_list_[chunk_cur_++]->createChunkReaderIterator();
   else
     return 0;
 }
-//PartitionStorage::AtomicPartitionReaderIterator::AtomicPartitionReaderIterator():PartitionReaderItetaor(){
+// PartitionStorage::AtomicPartitionReaderIterator::AtomicPartitionReaderIterator():PartitionReaderItetaor(){
 //
 //}
-PartitionStorage::AtomicPartitionReaderIterator::~AtomicPartitionReaderIterator() {
-
-}
-ChunkReaderIterator* PartitionStorage::AtomicPartitionReaderIterator::nextChunk() {
-//	lock_.acquire();
+PartitionStorage::AtomicPartitionReaderIterator::
+    ~AtomicPartitionReaderIterator() {}
+ChunkReaderIterator*
+PartitionStorage::AtomicPartitionReaderIterator::nextChunk() {
+  //	lock_.acquire();
   ChunkReaderIterator* ret;
   if (chunk_cur_ < ps->number_of_chunks_)
     ret = ps->chunk_list_[chunk_cur_++]->createChunkReaderIterator();
   else
     ret = 0;
-//	lock_.release();
+  //	lock_.release();
   return ret;
 }
 
@@ -117,12 +110,10 @@ bool PartitionStorage::PartitionReaderItetaor::nextBlock(
   assert(false);
   if (chunk_it_ > 0 && chunk_it_->nextBlock(block)) {
     return true;
-  }
-  else {
+  } else {
     if ((chunk_it_ = nextChunk()) > 0) {
       return nextBlock(block);
-    }
-    else {
+    } else {
       return false;
     }
   }
@@ -130,37 +121,43 @@ bool PartitionStorage::PartitionReaderItetaor::nextBlock(
 
 bool PartitionStorage::AtomicPartitionReaderIterator::nextBlock(
     BlockStreamBase*& block) {
-////	lock_.acquire();
-//	if(chunk_it_>0&&chunk_it_->nextBlock(block)){
-////		lock_.release();
-//		return true;
-//	}
-//	else{
-//		lock_.acquire();
-//		if((chunk_it_=nextChunk())>0){
-//			lock_.release();
-//			return nextBlock(block);
-//		}
-//		else{
-//			lock_.release();
-//			return false;
-//		}
-//	}
+  ////	lock_.acquire();
+  //	if(chunk_it_>0&&chunk_it_->nextBlock(block)){
+  ////		lock_.release();
+  //		return true;
+  //	}
+  //	else{
+  //		lock_.acquire();
+  //		if((chunk_it_=nextChunk())>0){
+  //			lock_.release();
+  //			return nextBlock(block);
+  //		}
+  //		else{
+  //			lock_.release();
+  //			return false;
+  //		}
+  //	}
   //	lock_.acquire();
 
   lock_.acquire();
-  ChunkReaderIterator::block_accessor* ba;
+  ChunkReaderIterator::block_accessor* ba = NULL;
   if (chunk_it_ != 0 && chunk_it_->getNextBlockAccessor(ba)) {
     lock_.release();
     ba->getBlock(block);
+    if (NULL != ba) {
+      delete ba;
+      ba = NULL;
+    }
     return true;
-  }
-  else {
+  } else {
+    if (NULL != chunk_it_) {
+      delete chunk_it_;
+      chunk_it_ = NULL;
+    }
     if ((chunk_it_ = PartitionReaderItetaor::nextChunk()) > 0) {
       lock_.release();
       return nextBlock(block);
-    }
-    else {
+    } else {
       lock_.release();
       return false;
     }
