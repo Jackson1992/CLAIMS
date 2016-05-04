@@ -31,6 +31,7 @@
 #include <stack>
 
 #include "../common/error_define.h"
+#include "../common/memory_handle.h"
 #include "../physical_operator/physical_operator_base.h"
 
 #include "../utility/rdtsc.h"
@@ -88,13 +89,13 @@ bool PhysicalLimit::Open(SegmentExecStatus* const exec_status,
 bool PhysicalLimit::Next(SegmentExecStatus* const exec_status,
                          BlockStreamBase* block) {
   RETURN_IF_CANCELLED(exec_status);
-
+  BlockStreamBase::BlockStreamTraverseIterator* it = NULL;
   while (state_.child_->Next(exec_status, block_for_asking_)) {
     RETURN_IF_CANCELLED(exec_status);
 
     void* tuple_from_child;
-    BlockStreamBase::BlockStreamTraverseIterator* it =
-        block_for_asking_->createIterator();
+    DELETE_PTR(it);
+    it = block_for_asking_->createIterator();
     while (NULL != (tuple_from_child = it->currentTuple())) {
       if (!LimitExhausted()) {
         if (!ShouldSkip()) {
