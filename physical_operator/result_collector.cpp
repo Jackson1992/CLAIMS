@@ -29,6 +29,7 @@
 #include <iostream>  // NOLINT
 #include <stack>
 
+#include "../common/memory_handle.h"
 #include "../utility/rdtsc.h"
 using std::vector;
 using std::string;
@@ -159,7 +160,8 @@ void* ResultCollector::CollectResult(void* arg) {
   ResultCollector* Pthis = (ResultCollector*)arg;
   Pthis->state_.child_->Open(Pthis->exec_status_,
                              Pthis->state_.partition_offset_);
-  BlockStreamBase* block_for_asking;
+  BlockStreamBase* block_for_asking = NULL;
+
   if (false == Pthis->CreateBlockStream(block_for_asking)) {
     assert(false);
     return 0;
@@ -179,6 +181,7 @@ void* ResultCollector::CollectResult(void* arg) {
       break;
     }
   }
+  DELETE_PTR(block_for_asking);
   Pthis->sema_input_complete_.post();
   double eclipsed_seconds = getSecond(start);
   Pthis->block_buffer_->query_time_ = eclipsed_seconds;

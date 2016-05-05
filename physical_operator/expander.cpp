@@ -237,7 +237,6 @@ void* Expander::ExpandedWork(void* arg) {
     BlockStreamBase* block_for_asking = BlockStreamBase::createBlock(
         Pthis->state_.schema_, Pthis->state_.block_size_);
     block_for_asking->setEmpty();
-
     while (Pthis->state_.child_->Next(Pthis->exec_status_, block_for_asking)) {
       if (!block_for_asking->Empty()) {
         Pthis->lock_.acquire();

@@ -205,10 +205,12 @@ bool Catalog::IsDataFileExist() {
       if ('T' == file_ptr->d_name[0]) {
         LOG(INFO) << "The data disk file started with 'T': "
                   << file_ptr->d_name[0] << " is existed" << endl;
+        closedir(dir);
         return true;
       }
     }
     LOG(INFO) << "There are no data file in disk" << endl;
+    closedir(dir);
     return false;
   } else {
     hdfsFS hdfsfs =
@@ -264,6 +266,7 @@ RetCode Catalog::restoreCatalog() {
 
     LOG(INFO) << "Start to deserialize catalog ..." << endl;
     string temp(static_cast<char*>(buffer), file_length);
+    DELETE_PTR(buffer);
     std::istringstream iss(temp);
     boost::archive::text_iarchive ia(iss);
     ia >> *this;
