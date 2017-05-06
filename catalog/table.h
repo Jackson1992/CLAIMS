@@ -72,11 +72,20 @@ class TableDescriptor {
   inline string getTableName() const { return tableName; }
 
   vector<vector<string>> GetAllPartitionsPath() const;
+  vector<vector<string>> GetAllCPartitionsPath() const;
 
   ProjectionDescriptor* getProjectoin(ProjectionOffset) const;
+  ProjectionDescriptor* GetColumnProjection(ProjectionOffset) const;
   unsigned getNumberOfProjection() const;
+  inline unsigned GetNumberOfColumn() const {
+    return column_projection_list_.size();
+  }
   vector<ProjectionDescriptor*>* GetProjectionList() {
     return &projection_list_;
+  }
+
+  vector<ProjectionDescriptor*>* GetColumnProjectList() {
+    return &column_projection_list_;
   }
   //  void addProjection(vector<ColumnOffset> id_list);
   RetCode createHashPartitionedProjection(vector<ColumnOffset> column_list,
@@ -105,6 +114,13 @@ class TableDescriptor {
         attributes, getAttribute2(partition_attribute_name),
         number_of_partitions);
   }
+  RetCode createHashPartitiondColumnProjection(
+      vector<ColumnOffset> column_list, std::string partition_attribute_name,
+      unsigned number_of_partitions) {
+    return CreateHashPartitionedColumnProjection(
+        column_list, getAttribute(partition_attribute_name),
+        number_of_partitions);
+  };  // which call this function ;the process of  create table  //by Han
 
   ColumnOffset getColumnID(const string& attrName) const;
   map<string, set<string>> getColumnLocations(const string& attrName) const;
@@ -127,6 +143,7 @@ class TableDescriptor {
   }
   Attribute getAttribute(const std::string& name) const;
   Attribute getAttribute2(const std::string& name) const;
+  vector<unsigned> GetAllAttributeIndex() const;
   inline unsigned int getNumberOfAttribute() { return attributes.size(); }
 
   Schema* getSchema() const;
@@ -161,6 +178,15 @@ class TableDescriptor {
   RetCode createHashPartitionedProjection(
       const vector<ColumnOffset>& column_list, Attribute partition_attribute,
       unsigned number_of_partitions);
+
+  RetCode CreateHashPartitionedColumnProjection(
+      const vector<ColumnOffset>& column_list, Attribute partition_attribute,
+      unsigned number_of_partitions);
+  ;
+  //  RetCode TableDescriptor::createHashPartitionedProjection1(
+  //      const vector<ColumnOffset>& column_list, Attribute
+  //      partition_attribute,
+  //      unsigned number_of_partitions);
 
   //  RetCode UpdateConnectorWithNewProj(int partition_num) {
   //    // TODO(yukai)
@@ -205,8 +231,11 @@ class TableDescriptor {
  protected:
   string tableName;
   vector<Attribute> attributes;
+  vector<Column>
+      column_list_;  // construct column to instead of projection_list  by Han ;
   TableID table_id_;
   vector<ProjectionDescriptor*> projection_list_;
+  vector<ProjectionDescriptor*> column_projection_list_;
   uint64_t row_number_;
   bool has_deleted_tuples_ = false;
 

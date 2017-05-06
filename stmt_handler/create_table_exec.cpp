@@ -237,25 +237,25 @@ RetCode CreateTableExec::Execute(ExecutedResult* exec_result) {
             int scale = 0;
             if (datatype->length_) {
               AstOptLength* l = dynamic_cast<AstOptLength*>(datatype->length_);
-              if((l->data1_>0))
-              {
+              if ((l->data1_ > 0)) {
                 precision = l->data1_;
                 scale = l->data2_;
               }
             }
-            /* here 1000 used for separating precision and scale, 
-                 you will always see multiply or divide 1000 during process decimal type  */
-            //TODO: define an marco value of 1000 in global file.
-            int max_length = precision*1000+scale;
+            /* here 1000 used for separating precision and scale,
+                 you will always see multiply or divide 1000 during process
+               decimal type  */
+            // TODO: define an marco value of 1000 in global file.
+            int max_length = precision * 1000 + scale;
             if (column_atts && (column_atts->datatype_ & 01)) {
-              table_desc_->addAttribute(colname, data_type(t_decimal), max_length,
-                                        true, false);
+              table_desc_->addAttribute(colname, data_type(t_decimal),
+                                        max_length, true, false);
             } else if (column_atts && (column_atts->datatype_ & 02)) {
-              table_desc_->addAttribute(colname, data_type(t_decimal), max_length,
-                                        true, true);
+              table_desc_->addAttribute(colname, data_type(t_decimal),
+                                        max_length, true, true);
             } else {
-              table_desc_->addAttribute(colname, data_type(t_decimal), max_length,
-                                        true);
+              table_desc_->addAttribute(colname, data_type(t_decimal),
+                                        max_length, true);
             }
             LOG(INFO) << colname + " is created" << std::endl;
             break;

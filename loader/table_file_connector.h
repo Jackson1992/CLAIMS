@@ -83,6 +83,8 @@ class TableFileConnector {
 
   RetCode UpdateWithNewProj();
 
+  RetCode GeneratedColumnProj();
+
  private:
   common::FilePlatform platform_;
   vector<vector<common::FileHandleImp*>> file_handles_;

@@ -131,6 +131,10 @@ bool PhysicalProject::Next(SegmentExecStatus* const exec_status,
       }
     }
     ProcessInLogic(block, tc);
+    LOG(INFO) << "Has temporary block changed its taili_info: "
+              << reinterpret_cast<uint64_t>(block + block->getsize() -
+                                            sizeof(BlockStreamFix::tail_info))
+              << endl;  // by Han for test performace
     if (block->Full())
       // for case (1)
       return true;

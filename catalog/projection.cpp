@@ -82,14 +82,23 @@ std::vector<Attribute> ProjectionDescriptor::getAttributeList() const {
   }
   return ret;
 }
+
 Schema* ProjectionDescriptor::getSchema() const {
   /**
    * Only fixed schema is supported now.
    * TODO: support other schema.
    */
+
   const vector<Attribute> attributes = getAttributeList();
   std::vector<column_type> columns;
-  for (unsigned i = 0; i < attributes.size(); i++) {
+  unsigned sel = 0;
+  //  if (getProjectionID().projection_off >= 0)
+  //    sel = 0;
+  //  else
+  //    sel = 1;  // by Han : schema of column need partition by partition key
+  //    but
+  //              // not insert into the layout of storage actually
+  for (unsigned i = sel; i < attributes.size(); i++) {
     columns.push_back(*attributes[i].attrType);
   }
   return new SchemaFix(columns);
@@ -103,6 +112,15 @@ int ProjectionDescriptor::getAttributeIndex(const Attribute& att) const {
   }
   return -1;
 }
+
+std::vector<int> ProjectionDescriptor::GetAllAttributeIndex() const {
+  const vector<Attribute> attributes = getAttributeList();
+  vector<int> att_index;
+  for (auto& i : attributes) {
+    att_index.push_back(i.index);
+  }
+  return att_index;
+}  // by Han : for CProjection_list
 
 long int ProjectionDescriptor::getNumberOfTuplesOnPartition(
     const unsigned partition_off) const {

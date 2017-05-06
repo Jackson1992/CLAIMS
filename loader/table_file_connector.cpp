@@ -55,7 +55,8 @@ TableFileConnector::TableFileConnector(FilePlatform platform,
                                        FileOpenFlag open_flag)
     : platform_(platform),
       table_(table),
-      write_path_name_(table->GetAllPartitionsPath()),
+      write_path_name_(
+          table->GetAllCPartitionsPath()),  // by Han : change row to column
       ref_(0),
       open_flag_(open_flag) {
   for (auto projection_iter : write_path_name_) {
@@ -292,6 +293,32 @@ RetCode TableFileConnector::UpdateWithNewProj() {
     string path =
         PartitionID(table_->getProjectoin(proj_index)->getProjectionID(), j)
             .getPathAndName();
+
+    prj_write_path.push_back(path);
+    prj_locks.push_back(Lock());
+    prj_imps.push_back(
+        FileHandleImpFactory::Instance().CreateFileHandleImp(platform_, path));
+  }
+  write_path_name_.push_back(prj_write_path);
+  write_locks_.push_back(prj_locks);
+  file_handles_.push_back(prj_imps);
+  return rSuccess;
+}
+
+RetCode TableFileConnector::GeneratedColumnProj() {
+  int proj_index = table_->column_projection_list_.size() - 1;
+  LOG(INFO) << "column_projection_list.size"
+            << table_->column_projection_list_.size() << endl;
+  vector<string> prj_write_path;
+  vector<Lock> prj_locks;
+  vector<FileHandleImp*> prj_imps;
+  for (int j = 0; j < table_->column_projection_list_[proj_index]
+                          ->getPartitioner()
+                          ->getNumberOfPartitions();
+       ++j) {
+    string path =
+        PartitionID(table_->GetColumnProjection(proj_index)->getProjectionID(),
+                    j).getPathAndName();  // modifty
 
     prj_write_path.push_back(path);
     prj_locks.push_back(Lock());

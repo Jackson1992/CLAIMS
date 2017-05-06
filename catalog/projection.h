@@ -83,6 +83,7 @@ class ProjectionDescriptor {
   std::vector<Attribute> getAttributeList() const;
   Schema* getSchema() const;
   int getAttributeIndex(const Attribute& att) const;
+  vector<int> GetAllAttributeIndex() const;
   int long getNumberOfTuplesOnPartition(const unsigned partition_off) const;
 
   /**

@@ -122,6 +122,8 @@ class BlockStreamBase : public Block {
 
 class BlockStreamFix : public BlockStreamBase {
   friend class BlockStreamBase;
+
+ public:
   struct tail_info {
     unsigned tuple_count;
   };

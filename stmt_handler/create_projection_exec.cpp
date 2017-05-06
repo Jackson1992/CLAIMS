@@ -147,22 +147,41 @@ RetCode CreateProjectionExec::CreateTableProjection(
     //    vector<ColumnOffset> indexDEL;
     //    indexDEL.push_back(0);
     if (0 != columns.size()) {
+      LOG(INFO)
+          << "I NEED NOW PARTITION_ATTRIBUTE && COLUMNS" << partition_attribute
+          << endl;  // by Han : partition_attribute is partition_key (row_id)
+                    //      for (auto& coloff : columns)
+      //        LOG(INFO) << "columns is on earth what: " << coloff << endl;
+      vector<ColumnOffset> all_columns = table->GetAllAttributeIndex();
+      //            for (auto& coloff1 : all_columns)
+      //              LOG(INFO) << "columns1 is on earth what: " << coloff1 <<
+      //              endl;
+      EXEC_AND_RETURN_ERROR(
+          ret,
+          catalog->getTable(table_id)->createHashPartitiondColumnProjection(
+              all_columns, partition_attribute, partition_num),
+          "failed to create each column  projection");
+      // by Han :优先生成列的投影
       EXEC_AND_RETURN_ERROR(
           ret, catalog->getTable(table_id)->createHashPartitionedProjection(
                    columns, partition_attribute, partition_num),
           "failed to create projection");
-
+      // by Han : the column still need the information of projection.
       int projection_index =
           catalog->getTable(table_id)->getNumberOfProjection() - 1;
-      Partitioner* partitioner = catalog->getTable(table_id)
-                                     ->getProjectoin(projection_index)
-                                     ->getPartitioner();
-      for (unsigned i = 0; i < partitioner->getNumberOfPartitions(); i++) {
-        catalog->getTable(table_id)
-            ->getProjectoin(projection_index)
-            ->getPartitioner()
-            ->RegisterPartition(i, 0);
-      }
+      vector<int> att_list = catalog->getTable(table_id)
+                                 ->getProjectoin(projection_index)
+                                 ->GetAllAttributeIndex();
+      LOG(INFO) << "the size of attribute in table_id: " << att_list.size()
+                << endl;
+      for (auto& part : att_list) {
+        Partitioner* partitioner = catalog->getTable(table_id)
+                                       ->GetColumnProjection(part)
+                                       ->getPartitioner();
+        for (unsigned i = 0; i < partitioner->getNumberOfPartitions(); i++) {
+          partitioner->RegisterPartition(i, 0);
+        }
+      }  // by Han : Projection -> CProjection and partitioner
     } else {
       ret = rStmtHandlerCreateProjectionWithEmptyColumn;
       WLOG(ret, "no columns are given when creating projection on table:" +

@@ -130,6 +130,7 @@ class DataInjector {
   /**
    * @brief Method description: add row_id column value
    */
+  //  inline RetCode AddRowIdColumn(vector<string>& tuple_string);
   inline RetCode AddRowIdColumn(string& tuple_string);
 
   /**
@@ -140,6 +141,9 @@ class DataInjector {
    */
   RetCode InsertTupleIntoProjection(
       int proj_index, void* tuple_buffer, Block* block_to_write,
+      vector<vector<BlockStreamBase*>>& local_pj_buffer);
+  RetCode InsertColumnIntoCProjection(
+      int proj_index, void* column_buffer, Block* block_to_write,
       vector<vector<BlockStreamBase*>>& local_pj_buffer);
 
   RetCode UpdateCatalog(FileOpenFlag open_flag);
@@ -156,6 +160,9 @@ class DataInjector {
   RetCode HandleSingleLine(string tuple_record, void* tuple_buffer,
                            string data_source, uint64_t row_id_in_raw_data,
                            ExecutedResult* result);
+  RetCode InsertEachColumn(void* tuple_buffer, Block* block_to_write,
+                           vector<vector<BlockStreamBase*>>& local_pj_buffer,
+                           int column_index);
 
   string GenerateDataValidityInfo(const Validity& vali, TableDescriptor* table,
                                   int line, const string& file);
@@ -177,6 +184,8 @@ class DataInjector {
  public:
   static istream& GetTupleTerminatedBy(ifstream& ifs, string& res,
                                        const string& terminator);
+  static RetCode SpiltTupleForColumn(vector<string>&, string& tuple,
+                                     const string& col_sep);
 
  private:
   TableDescriptor* table_;
@@ -190,6 +199,7 @@ class DataInjector {
   vector<PartitionFunction*> partition_functin_list_;
   vector<int> partition_key_index_;
   vector<SubTuple*> sub_tuple_generator_;
+  //  vector<string> column_tuple_;  // by Han : To spilt tuple by col_sep
   Block* sblock_;
 
   vector<vector<size_t>> blocks_per_partition_;

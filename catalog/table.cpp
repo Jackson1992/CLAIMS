@@ -103,7 +103,9 @@ RetCode TableDescriptor::createHashPartitionedProjection(
   projection_list_.push_back(projection);
   //  AddProjectionLocks(number_of_partitions);
   //  UpdateConnectorWithNewProj(number_of_partitions);
-  write_connector_->UpdateWithNewProj();
+  //  write_connector_->UpdateWithNewProj();
+  // by Han: projection is just logical, in fact CProjection need to be
+  // operated.
   update_lock_.release();
   return rSuccess;
 }
@@ -137,11 +139,39 @@ RetCode TableDescriptor::createHashPartitionedProjection(
   return rSuccess;
 }
 
-// void TableDescriptor::AddProjectionLocks(int number_of_partitions) {
-//  vector<Lock> locks;
-//  for (int i = 0; i < number_of_partitions; ++i) locks.push_back(Lock());
-//  partitions_write_lock_.push_back(locks);
-//}
+RetCode TableDescriptor::CreateHashPartitionedColumnProjection(
+    const vector<ColumnOffset>& column_list, Attribute partition_attribute,
+    unsigned number_of_partitions) {
+  //  LockGuard<SpineLock> guard(update_lock_);
+  if (!update_lock_.try_lock()) {
+    LOG(WARNING) << "failed to lock update_lock, may someone is loading or "
+                    "inserting data";
+    return common::rResourceIsLocked;
+  }
+  for (unsigned i = 0; i < column_list.size() - 1; i++) {
+    int identity = -1 - i;
+    ProjectionID cprojection_id(table_id_, identity);
+    ProjectionDescriptor* projection = new ProjectionDescriptor(cprojection_id);
+    projection->addAttribute(attributes[column_list[column_list.size() - 1]]);
+    projection->addAttribute(partition_attribute);
+    // by Han: each column need partition_key;
+    // 重复可能需要去重，而且不能作为实际要导入的数据。
+    projection->addAttribute(attributes[column_list[i]]);
+
+    PartitionFunction* hash_function =
+        PartitionFunctionFactory::createGeneralModuloFunction(
+            number_of_partitions);
+    projection->DefinePartitonier(number_of_partitions, partition_attribute,
+                                  hash_function);
+
+    column_projection_list_.push_back(projection);
+  }
+  //  AddProjectionLocks(number_of_partitions);
+  //  UpdateConnectorWithNewProj(number_of_partitions);
+  write_connector_->GeneratedColumnProj();
+  update_lock_.release();
+  return rSuccess;
+}
 
 bool TableDescriptor::isExist(const string& name) const {
   for (unsigned i = 0; i < attributes.size(); i++) {
@@ -156,6 +186,16 @@ ProjectionDescriptor* TableDescriptor::getProjectoin(
     return projection_list_.at(pid);
   } else {
     LOG(WARNING) << "no projection has been created on this table" << endl;
+    return NULL;
+  }
+}
+
+ProjectionDescriptor* TableDescriptor::GetColumnProjection(
+    ProjectionOffset pid) const {
+  if (pid >= 0 && pid < column_projection_list_.size()) {
+    return column_projection_list_.at(pid);
+  } else {
+    LOG(WARNING) << "NO column has been created on this table" << endl;
     return NULL;
   }
 }
@@ -196,6 +236,14 @@ Attribute TableDescriptor::getAttribute2(const std::string& name) const {
   assert(false);
   return NULL;
 }
+vector<unsigned> TableDescriptor::GetAllAttributeIndex() const {
+  vector<unsigned> attr_index;
+  vector<Attribute> attributes = getAttributes();
+  for (auto& i : attributes) {
+    attr_index.push_back(i.index);
+  }
+  return attr_index;
+}
 
 vector<vector<string>> TableDescriptor::GetAllPartitionsPath() const {
   vector<vector<string>> write_paths;
@@ -215,6 +263,31 @@ vector<vector<string>> TableDescriptor::GetAllPartitionsPath() const {
     for (auto part : prj) LOG(INFO) << part;
   return write_paths;
 }
+
+vector<vector<string>> TableDescriptor::GetAllCPartitionsPath() const {
+  vector<vector<string>> write_paths;
+  for (int i = 0; i < GetNumberOfColumn(); i++) {
+    vector<string> prj_write_path;
+    prj_write_path.clear();
+    for (int j = 0; j < column_projection_list_[i]
+                            ->getPartitioner()
+                            ->getNumberOfPartitions();
+         ++j) {
+      prj_write_path.push_back(
+          PartitionID(GetColumnProjection(i)->getProjectionID(), j)
+              .getPathAndName());
+      LOG(INFO) << "Column Projection ID is "
+                << GetColumnProjection(i)->getProjectionID().projection_off
+                << endl;
+    }
+    write_paths.push_back(prj_write_path);
+  }
+  LOG(INFO) << " table:" << getTableName() << " has the below partition:";
+  for (auto prj : write_paths)
+    for (auto part : prj) LOG(INFO) << part;
+  return write_paths;
+}
+
 Schema* TableDescriptor::getSchema() const {
   const vector<Attribute> attributes = getAttributes();
   std::vector<column_type> columns;
